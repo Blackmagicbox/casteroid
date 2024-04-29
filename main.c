@@ -113,10 +113,21 @@ int main(void) {
   if (ship_surface == NULL) {
     printf("Could not load ship image: %s\n", IMG_GetError());
   }
-
   SDL_Texture* ship_texture = SDL_CreateTextureFromSurface(renderer, ship_surface);
   SDL_FreeSurface(ship_surface);
   SDL_Rect ship_rect = {WINDOW_WIDTH/2, WINDOW_HEIGHT/2, 64, 64};
+
+  // Create the Laser Image
+  SDL_Surface* laser_surface = IMG_Load_RW(
+      SDL_RWFromFile("./graphics/laser.png", "rb"),
+      1
+    );
+  if (laser_surface == NULL) {
+    printf("Could not load laser image: %s\n", IMG_GetError());
+  }
+  SDL_Texture* laser_texture = SDL_CreateTextureFromSurface(renderer, laser_surface);
+  SDL_FreeSurface(laser_surface);
+  SDL_Rect laser_rect = {0, 0, 8, 64};
 
   bool running = true;
   while(running) {
@@ -141,6 +152,16 @@ int main(void) {
     ship_rect.y = y - ship_rect.h/2;
     SDL_SetTextureAlphaMod(ship_texture, 255);
     SDL_RenderCopy(renderer, ship_texture, NULL, &ship_rect);
+
+    // Draw the Laser
+    int shipCenterX = ship_rect.x + ship_rect.w/2;
+    int lx, ly;
+    lx = shipCenterX - laser_rect.w / 2;
+    ly = ship_rect.y + (ship_rect.h * -1);
+    laser_rect.x = lx;
+    laser_rect.y = ly;
+    SDL_SetTextureAlphaMod(laser_texture, 255);
+    SDL_RenderCopy(renderer, laser_texture, NULL, &laser_rect);
 
     // Display the Score
     displayScore(renderer, font, 100);
