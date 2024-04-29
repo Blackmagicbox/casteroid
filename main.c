@@ -1,5 +1,5 @@
 #include <SDL2/SDL.h>
-#include <wasm_simd128.h>
+#include <stdbool.h>
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
@@ -29,6 +29,9 @@ int main(void) {
       SDL_RENDERER_ACCELERATED
   );
 
+  // Create a background Image
+
+
   bool running = true;
   while(running) {
     SDL_Event event;
@@ -39,6 +42,12 @@ int main(void) {
     }
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
   }
 
+  SDL_DestroyRenderer(renderer);
+  SDL_DestroyWindow(window);
+  SDL_Quit();
+
+  return 0;
 }
