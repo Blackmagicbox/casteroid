@@ -34,6 +34,14 @@ int displayScore(SDL_Renderer* renderer, TTF_Font* font, int kills) {
   TTF_SizeText(font, scoreText, &text_width, &text_height);
   SDL_Rect rect = {WINDOW_WIDTH / 2 - text_width / 2, WINDOW_HEIGHT - 80, text_width, text_height};
 
+  // Draw a border around the text
+  int borderThickness = 20;
+  SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Set the color to white
+  for (int i = 10; i < borderThickness; i++) {
+    SDL_Rect borderRect = {rect.x - i, rect.y - i, rect.w + 2 * i, rect.h + 2 * i};
+    SDL_RenderDrawRect(renderer, &borderRect); // Draw the border
+  }
+
   SDL_RenderCopy(renderer, texture, NULL, &rect);
   SDL_DestroyTexture(texture);
   SDL_FreeSurface(surface);
@@ -76,7 +84,7 @@ int main(void) {
   }
 
   // Create the Score Font
-  TTF_Font* font = TTF_OpenFont("./fonts/subatomic.ttf", 24);
+  TTF_Font* font = TTF_OpenFont("./fonts/subatomic.ttf", 50);
   if (font == NULL) {
     printf("Could not load font: %s\n", TTF_GetError());
   }
@@ -137,7 +145,6 @@ int main(void) {
     // Display the Score
     displayScore(renderer, font, 100);
     SDL_RenderPresent(renderer);
-
    }
 
   SDL_DestroyRenderer(renderer);
