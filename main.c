@@ -5,6 +5,8 @@
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
+#define FRAME_RATE 120
+#define FRAME_DELAY (1000 / FRAME_RATE)
 
 
 int displayScore(SDL_Renderer *renderer, TTF_Font *font, int kills) {
@@ -138,8 +140,12 @@ int main(void) {
   SDL_FreeSurface(laser_surface);
   SDL_Rect laser_rect = {0, 0, 8, 64};
 
+  Uint32 frameStart;
+  Uint32 frameTime;
+
   bool running = true;
   while (running) {
+    frameStart = SDL_GetTicks();
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
@@ -154,6 +160,10 @@ int main(void) {
         laser_rect.y = ly;
         SDL_SetTextureAlphaMod(laser_texture, 255);
       }
+    }
+    frameTime = SDL_GetTicks() - frameStart;
+    if (frameTime < FRAME_DELAY) {
+      SDL_Delay(FRAME_DELAY - frameTime);
     }
     SDL_SetRenderDrawColor(renderer, 12, 2, 26, 255);
     SDL_RenderClear(renderer);
