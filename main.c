@@ -108,48 +108,46 @@ int main(void) {
   SDL_ShowCursor(SDL_DISABLE);
 
   // Create a background Image
-  SDL_Surface *background_surface = IMG_Load_RW(
+  SDL_Surface *backgroundSurface = IMG_Load_RW(
       SDL_RWFromFile("./graphics/background.png", "rb"),
       1
   );
-  if (background_surface == NULL) {
+  if (backgroundSurface == NULL) {
     printf("Could not load background image: %s\n", IMG_GetError());
   }
-  SDL_Texture *background_texture = SDL_CreateTextureFromSurface(renderer, background_surface);
-  SDL_FreeSurface(background_surface);
+  SDL_Texture *backgroundTexture = SDL_CreateTextureFromSurface(renderer, backgroundSurface);
+  SDL_FreeSurface(backgroundSurface);
   SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
   // __________________________________________________________________________
 
   // Create the Ship Image
-  SDL_Surface *ship_surface = IMG_Load_RW(
+  SDL_Surface *shipSurface = IMG_Load_RW(
       SDL_RWFromFile("./graphics/ship.png", "rb"),
       1
   );
-  if (ship_surface == NULL) {
+  if (shipSurface == NULL) {
     printf("Could not load ship image: %s\n", IMG_GetError());
   }
-  SDL_Texture *ship_texture = SDL_CreateTextureFromSurface(renderer, ship_surface);
-  SDL_FreeSurface(ship_surface);
-  SDL_Rect ship_rect = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 64, 64};
+  SDL_Texture *shipTexture = SDL_CreateTextureFromSurface(renderer, shipSurface);
+  SDL_FreeSurface(shipSurface);
+  SDL_Rect shipRect = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 64, 64};
   // __________________________________________________________________________
 
   // Create the Laser Image
-  SDL_Surface *laser_surface = IMG_Load_RW(
+  SDL_Surface *laserSurface = IMG_Load_RW(
       SDL_RWFromFile("./graphics/laser.png", "rb"),
       1
   );
-  if (laser_surface == NULL) {
+  if (laserSurface == NULL) {
     printf("Could not load laser image: %s\n", IMG_GetError());
 
   }
-  SDL_Texture *laser_texture = SDL_CreateTextureFromSurface(renderer, laser_surface);
-  SDL_FreeSurface(laser_surface);
-  // TODO: Create an array of lasers
+  SDL_Texture *laserTexture = SDL_CreateTextureFromSurface(renderer, laserSurface);
+  SDL_FreeSurface(laserSurface);
   int currentLaser = 0;
   SDL_Rect laserRects[5];
   // __________________________________________________________________________
-
-
+  
   // Game Loop
   Uint32 frameStart;
   Uint32 frameTime;
@@ -164,13 +162,13 @@ int main(void) {
       }
       if (event.type == SDL_MOUSEBUTTONDOWN) {
         SDL_Rect laserRect = {0, 0, 8, 64};
-        int shipCenterX = ship_rect.x + ship_rect.w / 2;
+        int shipCenterX = shipRect.x + shipRect.w / 2;
         int lx, ly;
         lx = shipCenterX - laserRect.w / 2;
-        ly = ship_rect.y + (ship_rect.h * -1);
+        ly = shipRect.y + (shipRect.h * -1);
         laserRect.x = lx;
         laserRect.y = ly;
-        SDL_SetTextureAlphaMod(laser_texture, 255);
+        SDL_SetTextureAlphaMod(laserTexture, 255);
         laserRects[currentLaser] = laserRect;
         currentLaser++;
         if (currentLaser > 4) {
@@ -186,23 +184,22 @@ int main(void) {
     SDL_RenderClear(renderer);
 
     // Draw the Background
-    SDL_Rect background_rect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
-    SDL_SetTextureAlphaMod(background_texture, 200);
-    SDL_RenderCopy(renderer, background_texture, NULL, &background_rect);
+    SDL_Rect backgroundRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
+    SDL_SetTextureAlphaMod(backgroundTexture, 200);
+    SDL_RenderCopy(renderer, backgroundTexture, NULL, &backgroundRect);
 
     // Draw the Ship
     int x, y;
     SDL_GetMouseState(&x, &y); // Get the mouse position
-    ship_rect.x = x - ship_rect.w / 2;
-    ship_rect.y = y - ship_rect.h / 2;
-    SDL_SetTextureAlphaMod(ship_texture, 255);
-    SDL_RenderCopy(renderer, ship_texture, NULL, &ship_rect);
+    shipRect.x = x - shipRect.w / 2;
+    shipRect.y = y - shipRect.h / 2;
+    SDL_SetTextureAlphaMod(shipTexture, 255);
+    SDL_RenderCopy(renderer, shipTexture, NULL, &shipRect);
 
     // Draw the Laser
-    // TODO: Loop through the lasers and draw them
     updateLaser(laserRects);
     for (int i = 0; i < 5; i++) {
-      SDL_RenderCopy(renderer, laser_texture, NULL, &laserRects[i]);
+      SDL_RenderCopy(renderer, laserTexture, NULL, &laserRects[i]);
     }
 
     // Display the Score
