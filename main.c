@@ -52,11 +52,15 @@ int displayScore(SDL_Renderer *renderer, TTF_Font *font, int kills) {
 }
 
 // Update Laser
-void updateLaser(SDL_Rect *laser_rect) {
-  laser_rect->y -= 1;
-  if (laser_rect->y < 0) {
-    // Destroy Laser
-    laser_rect->y = -80;
+void updateLaser(SDL_Rect laserRects[]) {
+  for (int i = 0; i < 5; i++) {
+    if (laserRects[i].y > -80) {
+      laserRects[i].y -= 1;
+    }
+    if (laserRects[i].y < 0) {
+      // Destroy Laser
+      laserRects[i].y = -80;
+    }
   }
 }
 
@@ -100,7 +104,6 @@ int main(void) {
     printf("Could not load font: %s\n", TTF_GetError());
   }
 
-
   // Hide Mouse Visibility
   SDL_ShowCursor(SDL_DISABLE);
 
@@ -115,6 +118,7 @@ int main(void) {
   SDL_Texture *background_texture = SDL_CreateTextureFromSurface(renderer, background_surface);
   SDL_FreeSurface(background_surface);
   SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+  // __________________________________________________________________________
 
   // Create the Ship Image
   SDL_Surface *ship_surface = IMG_Load_RW(
@@ -127,6 +131,7 @@ int main(void) {
   SDL_Texture *ship_texture = SDL_CreateTextureFromSurface(renderer, ship_surface);
   SDL_FreeSurface(ship_surface);
   SDL_Rect ship_rect = {WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2, 64, 64};
+  // __________________________________________________________________________
 
   // Create the Laser Image
   SDL_Surface *laser_surface = IMG_Load_RW(
@@ -135,11 +140,17 @@ int main(void) {
   );
   if (laser_surface == NULL) {
     printf("Could not load laser image: %s\n", IMG_GetError());
+
   }
   SDL_Texture *laser_texture = SDL_CreateTextureFromSurface(renderer, laser_surface);
   SDL_FreeSurface(laser_surface);
-  SDL_Rect laser_rect = {0, 0, 8, 64};
+  // TODO: Create an array of lasers
+  int currentLaser = 0;
+  SDL_Rect laserRects[5];
+  // __________________________________________________________________________
 
+
+  // Game Loop
   Uint32 frameStart;
   Uint32 frameTime;
 
@@ -152,13 +163,19 @@ int main(void) {
         running = false;
       }
       if (event.type == SDL_MOUSEBUTTONDOWN) {
+        SDL_Rect laserRect = {0, 0, 8, 64};
         int shipCenterX = ship_rect.x + ship_rect.w / 2;
         int lx, ly;
-        lx = shipCenterX - laser_rect.w / 2;
+        lx = shipCenterX - laserRect.w / 2;
         ly = ship_rect.y + (ship_rect.h * -1);
-        laser_rect.x = lx;
-        laser_rect.y = ly;
+        laserRect.x = lx;
+        laserRect.y = ly;
         SDL_SetTextureAlphaMod(laser_texture, 255);
+        laserRects[currentLaser] = laserRect;
+        currentLaser++;
+        if (currentLaser > 4) {
+          currentLaser = 0;
+        }
       }
     }
     frameTime = SDL_GetTicks() - frameStart;
@@ -182,16 +199,19 @@ int main(void) {
     SDL_RenderCopy(renderer, ship_texture, NULL, &ship_rect);
 
     // Draw the Laser
-
-    updateLaser(&laser_rect);
-    SDL_RenderCopy(renderer, laser_texture, NULL, &laser_rect);
-
+    // TODO: Loop through the lasers and draw them
+    updateLaser(laserRects);
+    for (int i = 0; i < 5; i++) {
+      SDL_RenderCopy(renderer, laser_texture, NULL, &laserRects[i]);
+    }
 
     // Display the Score
     displayScore(renderer, font, 100);
     SDL_RenderPresent(renderer);
   }
+  // __________________________________________________________________________
 
+  // Cleanup
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
