@@ -58,7 +58,7 @@ void updateLaser(SDL_Rect laserRects[]) {
       laserRects[i].y -= 1;
     }
     if (laserRects[i].y < 0) {
-      // Destroy Laser
+      // "Destroy" Laser
       laserRects[i].y = -80;
     }
   }
