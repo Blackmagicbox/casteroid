@@ -1,7 +1,16 @@
+#include <stdio.h>
+#include <stdbool.h>
+
+#ifdef _WIN32 // Defined by MSVC and MinGW, for both 32-bit and 64-bit environments
+#include <SDL.h>
+#include <SDL_image.h>
+#include <SDL_ttf.h>
+#else // This can be for Linux and potentially for macOS as well
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
-#include <stdbool.h>
+#endif
+
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
@@ -90,7 +99,7 @@ void updateAsteroid(SDL_Rect asteroidRects[]) {
   }
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
     printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
     return 1;
@@ -125,7 +134,7 @@ int main(void) {
   }
 
   // Create the Score Font
-  TTF_Font *font = TTF_OpenFont("./fonts/subatomic.ttf", 50);
+  TTF_Font *font = TTF_OpenFont("./resources/fonts/subatomic.ttf", 50);
   if (font == NULL) {
     printf("Could not load font: %s\n", TTF_GetError());
   }
@@ -135,7 +144,7 @@ int main(void) {
 
   // Create a background Image
   SDL_Surface *backgroundSurface = IMG_Load_RW(
-      SDL_RWFromFile("./graphics/background.png", "rb"),
+      SDL_RWFromFile("./resources/graphics/background.png", "rb"),
       1
   );
   if (backgroundSurface == NULL) {
@@ -148,7 +157,7 @@ int main(void) {
 
   // Create the Ship Image
   SDL_Surface *shipSurface = IMG_Load_RW(
-      SDL_RWFromFile("./graphics/ship.png", "rb"),
+      SDL_RWFromFile("./resources/graphics/ship.png", "rb"),
       1
   );
   if (shipSurface == NULL) {
@@ -161,7 +170,7 @@ int main(void) {
 
   // Create the Laser Image
   SDL_Surface *laserSurface = IMG_Load_RW(
-      SDL_RWFromFile("./graphics/laser.png", "rb"),
+      SDL_RWFromFile("./resources/graphics/laser.png", "rb"),
       1
   );
   if (laserSurface == NULL) {
@@ -175,7 +184,7 @@ int main(void) {
   // __________________________________________________________________________
 
   // Create the Asteroid Image
-  SDL_Surface *asteroidSurface = IMG_Load_RW(SDL_RWFromFile("./graphics/meteor.png", "rb"), 1);
+  SDL_Surface *asteroidSurface = IMG_Load_RW(SDL_RWFromFile("./resources/graphics/meteor.png", "rb"), 1);
   if (asteroidSurface == NULL) {
     printf("Could not load asteroid image: %s\n", IMG_GetError());
   }
