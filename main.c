@@ -26,6 +26,41 @@
 #define ASTEROID_SPEED 1
 #define ASTEROID_DISPERSION_FACTOR 100
 
+#define SCORE_BASE_INCREMENT 10
+
+int score = 0;
+
+bool isColliding(SDL_Rect a, SDL_Rect b) {
+  int leftA,leftB;
+  int rightA, rightB;
+  int topA, topB;
+  int bottomA,bottomB;
+
+  leftA = a.x;
+  leftB = b.x;
+  rightA = leftA + a.w;
+  rightB = leftB + b.w;
+  topA = a.y;
+  topB = b.y;
+  bottomA = topA + a.h;
+  bottomB = topB + b.h;
+
+  if (bottomA <= topB) {
+    return false;
+  }
+  if (topA >= bottomB) {
+    return false;
+  }
+  if (rightA <= leftB) {
+    return false;
+  }
+  if (leftA >= rightB) {
+    return false;
+  }
+
+  return true;
+}
+
 int displayScore(SDL_Renderer *renderer, TTF_Font *font, int kills) {
   if (font == NULL) {
     printf("Font not loaded! %s\n", TTF_GetError());
@@ -190,8 +225,6 @@ int main(int argc, char *argv[]) {
     SDL_SetTextureAlphaMod(asteroidTexture, 255);
       asteroidRects[i] = asteroidRect;
   }
-
-  // TODO: Create a timer to generate new asteroids
   // __________________________________________________________________________
 
   // Game Loop
@@ -254,8 +287,30 @@ int main(int argc, char *argv[]) {
       SDL_RenderCopy(renderer, asteroidTexture, NULL, &asteroidRects[i]);
     }
 
+    // Check for Collision
+    // Between Ship and asteroids
+    for (int i = 0; i < MAX_ASTEROIDS_NUMBER; i++) {
+      if (isColliding(shipRect, asteroidRects[i])) {
+        printf("Game Over!!!\n");
+        running = false;
+      }
+    }
+    // Between Lasers and Asteroids
+    for (int i = 0; i < MAX_LASERS_NUMBER; i++) {
+      for (int j = 0; j < MAX_ASTEROIDS_NUMBER; j++) {
+        if (laserRects[i].y >= 0 && laserRects[i].y < WINDOW_HEIGHT
+            && asteroidRects[j].y > 0 && asteroidRects[j].y <= WINDOW_HEIGHT) {
+          if(isColliding(laserRects[i], asteroidRects[j])) {
+            score += SCORE_BASE_INCREMENT;
+            laserRects[i].y = -laserRects[i].h;
+            asteroidRects[j].y = -asteroidRects[j].h;
+          }
+        }
+      }
+    }
+
     // Display the Score
-    displayScore(renderer, font, 100);
+    displayScore(renderer, font, score);
     SDL_RenderPresent(renderer);
   }
   // __________________________________________________________________________
