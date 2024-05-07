@@ -9,6 +9,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
+#include <time.h>
+
 #endif
 
 
@@ -16,14 +18,13 @@
 #define WINDOW_HEIGHT 720
 #define FRAME_RATE 120
 #define FRAME_DELAY (1000 / FRAME_RATE)
-#define SDL_USEREVENT_CREATE_ASTEROID (SDL_USEREVENT + 1)
 
 #define MAX_LASERS_NUMBER 5
 #define LASER_SPEED 1
 
-#define MAX_ASTEROIDS_NUMBER 20
-#define ASTEROID_COOLDOWN_TIME 500
+#define MAX_ASTEROIDS_NUMBER 10
 #define ASTEROID_SPEED 1
+#define ASTEROID_DISPERSION_FACTOR 100
 
 int displayScore(SDL_Renderer *renderer, TTF_Font *font, int kills) {
   if (font == NULL) {
@@ -78,22 +79,11 @@ void updateLaser(SDL_Rect laserRects[]) {
   }
 }
 
-// Create Asteroid Event
-Uint32 createAsteroidEvent(Uint32 interval, void *param) {
-  SDL_Event event;
-  event.type = SDL_USEREVENT_CREATE_ASTEROID;
-  event.user.code = SDL_USEREVENT_CREATE_ASTEROID;
-  event.user.data1 = 0;
-  event.user.data2 = 0;
-  SDL_PushEvent(&event);
-  return interval;
-}
-
 // Update Asteroid
 void updateAsteroid(SDL_Rect asteroidRects[]) {
   for (int i = 0; i < MAX_ASTEROIDS_NUMBER; i++) {
-    if (asteroidRects[i].y > WINDOW_HEIGHT + 84) {
-      asteroidRects[i].y = -84;
+    if (asteroidRects[i].y > WINDOW_HEIGHT + asteroidRects[i].h) {
+      asteroidRects[i].y = rand() % WINDOW_HEIGHT - WINDOW_HEIGHT;
     }
     asteroidRects[i].y += ASTEROID_SPEED;
   }
@@ -190,8 +180,16 @@ int main(int argc, char *argv[]) {
   }
   SDL_Texture *asteroidTexture = SDL_CreateTextureFromSurface(renderer, asteroidSurface);
   SDL_FreeSurface(asteroidSurface);
-  int currentAsteroid = 0;
   SDL_Rect asteroidRects[MAX_ASTEROIDS_NUMBER];
+  srand(time(NULL) * ASTEROID_DISPERSION_FACTOR);
+  for (int i = 0; i < MAX_ASTEROIDS_NUMBER; i++) {
+    int randomX = rand() % WINDOW_WIDTH;
+    int randomY = rand() % WINDOW_HEIGHT - WINDOW_HEIGHT;
+
+    SDL_Rect asteroidRect = {randomX, randomY, 101, 84};
+    SDL_SetTextureAlphaMod(asteroidTexture, 255);
+      asteroidRects[i] = asteroidRect;
+  }
 
   // TODO: Create a timer to generate new asteroids
   // __________________________________________________________________________
@@ -199,7 +197,6 @@ int main(int argc, char *argv[]) {
   // Game Loop
   Uint32 frameStart;
   Uint32 frameTime;
-  SDL_TimerID asteroidTimer = SDL_AddTimer(ASTEROID_COOLDOWN_TIME, createAsteroidEvent, NULL);
 
   bool running = true;
   while (running) {
@@ -208,18 +205,6 @@ int main(int argc, char *argv[]) {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
         running = false;
-      }
-      if (event.type == SDL_USEREVENT_CREATE_ASTEROID) {
-        if (asteroidRects[currentAsteroid].y < 1) {
-          int randomX = rand() % WINDOW_WIDTH;
-          SDL_Rect asteroidRect = {randomX, -(2 * 84), 101, 84};
-          SDL_SetTextureAlphaMod(asteroidTexture, 255);
-          asteroidRects[currentAsteroid] = asteroidRect;
-        }
-        currentAsteroid++;
-        if (currentAsteroid > 9) {
-          currentAsteroid = 0;
-        }
       }
       if (event.type == SDL_MOUSEBUTTONDOWN) {
         SDL_Rect laserRect = {0, 0, 8, 64};
@@ -276,7 +261,6 @@ int main(int argc, char *argv[]) {
   // __________________________________________________________________________
 
   // Cleanup
-  SDL_RemoveTimer(asteroidTimer);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
