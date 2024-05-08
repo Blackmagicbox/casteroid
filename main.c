@@ -9,6 +9,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_mixer.h>
 #include <time.h>
 
 #endif
@@ -133,12 +134,26 @@ int main(int argc, char *argv[]) {
     printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
     return 1;
   }
-  IMG_Init(IMG_INIT_PNG);
+  if (IMG_Init(IMG_INIT_PNG) < 0) {
+    printf("IMG could not initialize! SDL Error: %s\n", IMG_GetError());
+    return 1;
+  }
 
   if (TTF_Init() < 0) {
     printf("TTF could not initialize! TTF Error: %s\n", TTF_GetError());
     return 1;
   }
+
+  if (Mix_Init(MIX_INIT_OGG | MIX_INIT_MID) < 0) {
+    printf("Mix could not initialize! TTF Error: %s\n", Mix_GetError());
+    return 1;
+  }
+
+  if ( Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+    printf("Mix could not initialize! TTF Error: %s\n", Mix_GetError());
+    return 1;
+  }
+
 
   SDL_Window *window = SDL_CreateWindow(
       "Casteroids",
@@ -211,6 +226,12 @@ int main(int argc, char *argv[]) {
   int currentLaser = 0;
   SDL_Rect laserRects[MAX_LASERS_NUMBER];
   // __________________________________________________________________________
+  // Add the Laser Sound
+  Mix_Chunk *laserSound = Mix_LoadWAV("./resources/sounds/laser.ogg");
+  if (laserSound == NULL) {
+    printf("Failed to load laser sound effect: %s\n", Mix_GetError());
+    return 1;
+  }
 
   // Create the Asteroid Image
   SDL_Surface *asteroidSurface = IMG_Load_RW(SDL_RWFromFile("./resources/graphics/meteor.png", "rb"), 1);
@@ -230,6 +251,20 @@ int main(int argc, char *argv[]) {
       asteroidRects[i] = asteroidRect;
   }
   // __________________________________________________________________________
+  // Add Explosion Sound
+  Mix_Chunk *explosionSound = Mix_LoadWAV("./resources/sounds/explosion.wav");
+  if (explosionSound == NULL) {
+    printf("Failed to load explosion sound: %s\n", Mix_GetError());
+  }
+
+  // Sound Track
+  Mix_Chunk *soundTrack = Mix_LoadWAV("./resources/sounds/music.wav");
+  if (soundTrack == NULL) {
+    printf("Failed to load sound-track: %s\n", Mix_GetError());
+  }
+  // Set The volume low for the Sound track
+  Mix_VolumeChunk(soundTrack, MIX_MAX_VOLUME / 2);
+  Mix_PlayChannel(-1, soundTrack, -1);
 
   // Game Loop
   Uint32 frameStart;
@@ -253,6 +288,7 @@ int main(int argc, char *argv[]) {
         laserRect.y = ly;
         SDL_SetTextureAlphaMod(laserTexture, 255);
         laserRects[currentLaser] = laserRect;
+        Mix_PlayChannel(-1, laserSound, 0);
         currentLaser++;
         if (currentLaser > 4) {
           currentLaser = 0;
@@ -297,6 +333,7 @@ int main(int argc, char *argv[]) {
       if (isColliding(shipRect, asteroidRects[i])) {
         printf("Game Over!!!\n");
         running = false;
+        Mix_PlayChannel(-1, explosionSound, 0);
       }
     }
     // Between Lasers and Asteroids
@@ -308,6 +345,7 @@ int main(int argc, char *argv[]) {
             score += SCORE_BASE_INCREMENT;
             laserRects[i].y = -laserRects[i].h;
             asteroidRects[j].y = -asteroidRects[j].h;
+            Mix_PlayChannel(-1, explosionSound, 0);
           }
         }
       }
