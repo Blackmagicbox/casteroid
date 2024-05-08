@@ -6,6 +6,7 @@
 #include <SDL_image.h>
 #include <SDL_ttf.h>
 #else // This can be for Linux and potentially for macOS as well
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
@@ -34,11 +35,32 @@
 
 int score = 0;
 
+void resetGame(SDL_Rect shipRect, SDL_Rect laserRects[], SDL_Rect asteroidRects[]) {
+  score = 0;
+  // Reset the Ship
+  shipRect.x = WINDOW_WIDTH / 2;
+  shipRect.y = WINDOW_HEIGHT / 2;
+
+  // Reset the Lasers
+  for (int i = 0; i < MAX_LASERS_NUMBER; i++) {
+    laserRects[i].y = -laserRects[i].h;
+  }
+
+  // Reset the Asteroids
+  for (int i = 0; i < MAX_ASTEROIDS_NUMBER; i++) {
+    int randomX = rand() % WINDOW_WIDTH;
+    int randomY = rand() % WINDOW_HEIGHT - WINDOW_HEIGHT;
+    asteroidRects[i].x = randomX;
+    asteroidRects[i].y = randomY;
+  }
+}
+
+
 bool isColliding(SDL_Rect a, SDL_Rect b) {
-  int leftA,leftB;
+  int leftA, leftB;
   int rightA, rightB;
   int topA, topB;
-  int bottomA,bottomB;
+  int bottomA, bottomB;
 
   leftA = a.x;
   leftB = b.x;
@@ -149,7 +171,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  if ( Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+  if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
     printf("Mix could not initialize! TTF Error: %s\n", Mix_GetError());
     return 1;
   }
@@ -248,7 +270,7 @@ int main(int argc, char *argv[]) {
 
     SDL_Rect asteroidRect = {randomX, randomY, 101, 84};
     SDL_SetTextureAlphaMod(asteroidTexture, 255);
-      asteroidRects[i] = asteroidRect;
+    asteroidRects[i] = asteroidRect;
   }
   // __________________________________________________________________________
   // Add Explosion Sound
@@ -271,14 +293,14 @@ int main(int argc, char *argv[]) {
   Uint32 frameTime;
 
   bool running = true;
+  bool isGameOver = false;
   while (running) {
     frameStart = SDL_GetTicks();
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
         running = false;
-      }
-      if (event.type == SDL_MOUSEBUTTONDOWN) {
+      } else if (event.type == SDL_MOUSEBUTTONDOWN) {
         SDL_Rect laserRect = {0, 0, 8, 64};
         int shipCenterX = shipRect.x + shipRect.w / 2;
         int lx, ly;
@@ -307,63 +329,95 @@ int main(int argc, char *argv[]) {
     SDL_SetTextureAlphaMod(backgroundTexture, 200);
     SDL_RenderCopy(renderer, backgroundTexture, NULL, &backgroundRect);
 
+
+    // Updates
+    if (!isGameOver) {
+      // Update the Ship
+      int x, y;
+      SDL_GetMouseState(&x, &y); // Get the mouse position
+      shipRect.x = x - shipRect.w / 2;
+      shipRect.y = y - shipRect.h / 2;
+      SDL_SetTextureAlphaMod(shipTexture, 255);
+
+      // Update Lasers
+      updateLaser(laserRects);
+
+
+      // Update Asteroids
+      updateAsteroid(asteroidRects);
+
+
+      // Check for Collision
+      // Between Ship and asteroids
+      for (int i = 0; i < MAX_ASTEROIDS_NUMBER; i++) {
+        if (isColliding(shipRect, asteroidRects[i])) {
+          printf("Game Over!!!\n");
+          isGameOver = true;
+          Mix_PlayChannel(-1, explosionSound, 0);
+        }
+      }
+      // Between Lasers and Asteroids
+      for (int i = 0; i < MAX_LASERS_NUMBER; i++) {
+        for (int j = 0; j < MAX_ASTEROIDS_NUMBER; j++) {
+          if (laserRects[i].y >= 0 && laserRects[i].y < WINDOW_HEIGHT
+              && asteroidRects[j].y > 0 && asteroidRects[j].y <= WINDOW_HEIGHT) {
+            if (isColliding(laserRects[i], asteroidRects[j])) {
+              score += SCORE_BASE_INCREMENT;
+              laserRects[i].y = -laserRects[i].h;
+              asteroidRects[j].y = -asteroidRects[j].h;
+              Mix_PlayChannel(-1, explosionSound, 0);
+            }
+          }
+        }
+      }
+
+      // Increment the Score as time goes
+      Uint32 elapsedTime = SDL_GetTicks();
+      if (elapsedTime - lastScoreIncrementTime >= TIME_SCORE_BONUS_INTERVAL) {
+        score += SCORE_TIME_INCREMENT;
+        lastScoreIncrementTime = elapsedTime;
+      }
+
+    }
     // Draw the Ship
-    int x, y;
-    SDL_GetMouseState(&x, &y); // Get the mouse position
-    shipRect.x = x - shipRect.w / 2;
-    shipRect.y = y - shipRect.h / 2;
-    SDL_SetTextureAlphaMod(shipTexture, 255);
     SDL_RenderCopy(renderer, shipTexture, NULL, &shipRect);
 
-    // Draw the Laser
-    updateLaser(laserRects);
+    // Draw the Lasers
     for (int i = 0; i < MAX_LASERS_NUMBER; i++) {
       SDL_RenderCopy(renderer, laserTexture, NULL, &laserRects[i]);
     }
 
-    // Draw the asteroid
-    updateAsteroid(asteroidRects);
+    // Draw the Asteroids
     for (int i = 0; i < MAX_ASTEROIDS_NUMBER; i++) {
       SDL_RenderCopy(renderer, asteroidTexture, NULL, &asteroidRects[i]);
     }
 
-    // Check for Collision
-    // Between Ship and asteroids
-    for (int i = 0; i < MAX_ASTEROIDS_NUMBER; i++) {
-      if (isColliding(shipRect, asteroidRects[i])) {
-        printf("Game Over!!!\n");
-        running = false;
-        Mix_PlayChannel(-1, explosionSound, 0);
+    // Draw the Game Over Screen text if the game is over
+    if (isGameOver) {
+      SDL_Color color = {255, 100, 100};
+      char gameOverText[100];
+      sprintf(gameOverText, "Game Over!!!");
+      SDL_Surface *surface = TTF_RenderText_Blended(font, gameOverText, color);
+      if (surface == NULL) {
+        printf("Failed to create surface: %s\n", TTF_GetError());
       }
-    }
-    // Between Lasers and Asteroids
-    for (int i = 0; i < MAX_LASERS_NUMBER; i++) {
-      for (int j = 0; j < MAX_ASTEROIDS_NUMBER; j++) {
-        if (laserRects[i].y >= 0 && laserRects[i].y < WINDOW_HEIGHT
-            && asteroidRects[j].y > 0 && asteroidRects[j].y <= WINDOW_HEIGHT) {
-          if(isColliding(laserRects[i], asteroidRects[j])) {
-            score += SCORE_BASE_INCREMENT;
-            laserRects[i].y = -laserRects[i].h;
-            asteroidRects[j].y = -asteroidRects[j].h;
-            Mix_PlayChannel(-1, explosionSound, 0);
-          }
-        }
+      SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+      if (texture == NULL) {
+        printf("Failed to create texture: %s\n", SDL_GetError());
+        SDL_FreeSurface(surface); // Free surface before returning
       }
+      int text_width, text_height;
+      TTF_SizeText(font, gameOverText, &text_width, &text_height);
+      SDL_Rect rect = {WINDOW_WIDTH / 2 - text_width / 2, WINDOW_HEIGHT / 2 - text_height / 2, text_width, text_height};
+      SDL_RenderCopy(renderer, texture, NULL, &rect);
+      SDL_DestroyTexture(texture);
     }
-
-    // Increment the Score as time goes
-    Uint32 elapsedTime = SDL_GetTicks();
-    if (elapsedTime - lastScoreIncrementTime >= TIME_SCORE_BONUS_INTERVAL) {
-      score += SCORE_TIME_INCREMENT;
-      lastScoreIncrementTime = elapsedTime;
-    }
-
     // Display the Score
     displayScore(renderer, font, score);
     SDL_RenderPresent(renderer);
-  }
-  // __________________________________________________________________________
+    // __________________________________________________________________________
 
+  }
   // Cleanup
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
