@@ -27,6 +27,9 @@
 #define ASTEROID_DISPERSION_FACTOR 100
 
 #define SCORE_BASE_INCREMENT 10
+#define SCORE_TIME_INCREMENT 1
+
+#define TIME_SCORE_BONUS_INTERVAL 3000
 
 int score = 0;
 
@@ -125,6 +128,7 @@ void updateAsteroid(SDL_Rect asteroidRects[]) {
 }
 
 int main(int argc, char *argv[]) {
+  Uint32 lastScoreIncrementTime = SDL_GetTicks();
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
     printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
     return 1;
@@ -307,6 +311,13 @@ int main(int argc, char *argv[]) {
           }
         }
       }
+    }
+
+    // Increment the Score as time goes
+    Uint32 elapsedTime = SDL_GetTicks();
+    if (elapsedTime - lastScoreIncrementTime >= TIME_SCORE_BONUS_INTERVAL) {
+      score += SCORE_TIME_INCREMENT;
+      lastScoreIncrementTime = elapsedTime;
     }
 
     // Display the Score
