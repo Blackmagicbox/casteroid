@@ -55,6 +55,50 @@ void resetGame(SDL_Rect shipRect, SDL_Rect laserRects[], SDL_Rect asteroidRects[
   }
 }
 
+void displayGameOverText(SDL_Renderer *renderer, TTF_Font *font) {
+  SDL_Color color = {255, 100, 100};
+  char gameOverText[100];
+  sprintf(gameOverText, "Game Over!!!");
+  SDL_Surface *surface = TTF_RenderText_Blended(font, gameOverText, color);
+  if (surface == NULL) {
+    printf("Failed to create surface: %s\n", TTF_GetError());
+    return;
+  }
+  SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+  if (texture == NULL) {
+    printf("Failed to create texture: %s\n", SDL_GetError());
+    SDL_FreeSurface(surface); // Free surface before returning
+    return;
+  }
+  int text_width, text_height;
+  TTF_SizeText(font, gameOverText, &text_width, &text_height);
+  SDL_Rect rect = {WINDOW_WIDTH / 2 - text_width / 2, WINDOW_HEIGHT / 2 - text_height / 2, text_width, text_height};
+  SDL_RenderCopy(renderer, texture, NULL, &rect);
+  SDL_DestroyTexture(texture);
+  SDL_FreeSurface(surface);
+
+  // Reset Game Instructions
+  TTF_Font *smallFont = TTF_OpenFont("./resources/fonts/subatomic.ttf", 25); // Adjust the size as needed
+  char restartText[100];
+  sprintf(restartText, "Press Enter to Restart");
+  SDL_Surface *restartSurface = TTF_RenderText_Blended(smallFont, restartText, color);
+  if (restartSurface == NULL) {
+    printf("Failed to create surface: %s\n", TTF_GetError());
+    return;
+  }
+  SDL_Texture *restartTexture = SDL_CreateTextureFromSurface(renderer, restartSurface);
+  if (restartTexture == NULL) {
+    printf("Failed to create texture: %s\n", SDL_GetError());
+    SDL_FreeSurface(restartSurface); // Free surface before returning
+    return;
+  }
+  int restartText_width, restartText_height;
+  TTF_SizeText(smallFont, restartText, &restartText_width, &restartText_height);
+  SDL_Rect restartRect = {WINDOW_WIDTH / 2 - restartText_width / 2, WINDOW_HEIGHT / 2 - restartText_height / 2 + 100, restartText_width, restartText_height}; // Adjust the position as needed
+  SDL_RenderCopy(renderer, restartTexture, NULL, &restartRect);
+  SDL_DestroyTexture(restartTexture);
+  SDL_FreeSurface(restartSurface);
+}
 
 bool isColliding(SDL_Rect a, SDL_Rect b) {
   int leftA, leftB;
@@ -300,7 +344,14 @@ int main(int argc, char *argv[]) {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) {
         running = false;
-      } else if (event.type == SDL_MOUSEBUTTONDOWN) {
+      }
+      if (event.type == SDL_KEYDOWN) {
+        if (event.key.keysym.sym == SDLK_RETURN && isGameOver) {
+          resetGame(shipRect, laserRects, asteroidRects);
+          isGameOver = false;
+        }
+      }
+      if (event.type == SDL_MOUSEBUTTONDOWN) {
         SDL_Rect laserRect = {0, 0, 8, 64};
         int shipCenterX = shipRect.x + shipRect.w / 2;
         int lx, ly;
@@ -342,16 +393,13 @@ int main(int argc, char *argv[]) {
       // Update Lasers
       updateLaser(laserRects);
 
-
       // Update Asteroids
       updateAsteroid(asteroidRects);
-
 
       // Check for Collision
       // Between Ship and asteroids
       for (int i = 0; i < MAX_ASTEROIDS_NUMBER; i++) {
         if (isColliding(shipRect, asteroidRects[i])) {
-          printf("Game Over!!!\n");
           isGameOver = true;
           Mix_PlayChannel(-1, explosionSound, 0);
         }
@@ -394,24 +442,9 @@ int main(int argc, char *argv[]) {
 
     // Draw the Game Over Screen text if the game is over
     if (isGameOver) {
-      SDL_Color color = {255, 100, 100};
-      char gameOverText[100];
-      sprintf(gameOverText, "Game Over!!!");
-      SDL_Surface *surface = TTF_RenderText_Blended(font, gameOverText, color);
-      if (surface == NULL) {
-        printf("Failed to create surface: %s\n", TTF_GetError());
-      }
-      SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-      if (texture == NULL) {
-        printf("Failed to create texture: %s\n", SDL_GetError());
-        SDL_FreeSurface(surface); // Free surface before returning
-      }
-      int text_width, text_height;
-      TTF_SizeText(font, gameOverText, &text_width, &text_height);
-      SDL_Rect rect = {WINDOW_WIDTH / 2 - text_width / 2, WINDOW_HEIGHT / 2 - text_height / 2, text_width, text_height};
-      SDL_RenderCopy(renderer, texture, NULL, &rect);
-      SDL_DestroyTexture(texture);
+      displayGameOverText(renderer, font);
     }
+
     // Display the Score
     displayScore(renderer, font, score);
     SDL_RenderPresent(renderer);
